@@ -1,0 +1,190 @@
+---
+title: "Exercise_answers"
+author: "Franky Zhang"
+date: "5/11/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(magrittr)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+# install.packages("fitdistrplus")
+library(fitdistrplus)
+library(car)
+```
+
+## Exercise 4.25
+
+```{r}
+# n = 5
+approx = c()
+for (i in 1:5) {
+  approx[i] = (i - (1/3))/(5 + (1/3))
+}
+iter = 10000
+U_5 = matrix(NA, ncol = 5, nrow = iter)
+for (n in 1:iter){
+  series = runif(5, min = 0, max = 1)
+  U_5[n, 1] = sort(series)[1]
+  U_5[n, 2] = sort(series)[2]
+  U_5[n, 3] = sort(series)[3]
+  U_5[n, 4] = sort(series)[4]
+  U_5[n, 5] = sort(series)[5]
+}
+
+comparison1 = data.frame(rbind(approx, apply(U_5, 2, median)))
+rownames(comparison1) = c("approximation", "calculated value")
+colnames(comparison1) = c("i = 1", "i = 2", "i = 3", "i = 4", "i = 5")
+
+# n = 10
+U_10 = matrix(NA, ncol = 10, nrow = iter)
+for (n in 1:iter){
+  series = runif(10, min = 0, max = 1)
+  U_10[n, 1] = sort(series)[1]
+  U_10[n, 2] = sort(series)[2]
+  U_10[n, 3] = sort(series)[3]
+  U_10[n, 4] = sort(series)[4]
+  U_10[n, 5] = sort(series)[5]
+  U_10[n, 6] = sort(series)[6]
+  U_10[n, 7] = sort(series)[7]
+  U_10[n, 8] = sort(series)[8]
+  U_10[n, 9] = sort(series)[9]
+  U_10[n, 10] = sort(series)[10]
+}
+approx = c()
+for (i in 1:10) {
+  approx[i] = (i - (1/3))/(10 + (1/3))
+}
+
+comparison2 = data.frame(rbind(approx, apply(U_10, 2, median)))
+rownames(comparison2) = c("approximation", "calculated value")
+colnames(comparison2) = c("i = 1", "i = 2", "i = 3", "i = 4", "i = 5", 
+                         "i = 6", "i = 7", "i = 8", "i = 9", "i = 10")
+```
+
+```{r}
+comparison1
+comparison2
+```
+
+I've done the simulation for order statistic. From the results, the approximation equation is true. 
+
+
+## Exercise 4.27
+
+### (a)
+
+```{r}
+Jan_1940 = c(0.15, 0.25, 0.10, 0.20, 1.85, 1.97, 0.80, 0.20,
+             0.10, 0.50, 0.82, 0.40, 1.80, 0.20, 1.12, 1.83,
+             0.45, 3.17, 0.89, 0.31, 0.59, 0.10, 0.10, 0.90,
+             0.10, 0.25, 0.10, 0.90)
+Jul_1940 = c(0.30, 0.22, 0.10, 0.12, 0.20, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.17,
+             0.20, 2.80, 0.85, 0.10, 0.10, 1.23, 0.45, 0.30, 0.20, 1.20, 0.10, 0.15,
+             0.10, 0.20, 0.10, 0.20, 0.35, 0.62, 0.20, 1.22, 0.30, 0.80, 0.15, 1.53,
+             0.10, 0.20, 0.30, 0.40, 0.23, 0.20, 0.10, 0.10, 0.60, 0.20, 0.50, 0.15,
+             0.60, 0.30, 0.80, 1.10, 0.20, 0.10, 0.10, 0.10, 0.42, 0.85, 1.60, 0.10,
+             0.25, 0.10, 0.20, 0.10)
+```
+
+```{r}
+print("summary statistic of Jan 1940:")
+summary(Jan_1940)
+
+cat("\n")
+print("summary statistic of Jul 1940:")
+summary(Jul_1940)
+```
+
+### (b)
+
+```{r}
+par(mfrow = c(1, 2))
+qqnorm(Jan_1940, pch = 1, frame = FALSE)
+qqline(Jan_1940, col = "steelblue", lwd = 2)
+qqnorm(Jul_1940, pch = 1, frame = FALSE)
+qqline(Jul_1940, col = "steelblue", lwd = 2)
+```
+Since the observations are relatively far away from the normal distribution line, normal distribution is no longer be considered. Also, the observations are continuously distributed, consider about the gamma distribution. 
+
+### (c)
+
+```{r}
+fit_Jan <- fitdist(Jan_1940, distr = "gamma", method = "mle")
+fit_Jul <- fitdist(Jul_1940, distr = "gamma", method = "mle")
+mean_Jan <- fit_Jan$estimate[1]/fit_Jan$estimate[2]
+mean_Jul <- fit_Jul$estimate[1]/fit_Jul$estimate[2]
+summary(fit_Jan)
+summary(fit_Jul)
+```
+
+_Answer_:
+For Jan 1940, the maximum log likelihood is -19.8, the estimated value of shape parameter is 1.06 with sd equal to 0.25 and the rate parameter is 1.47 with sd equal to 0.44. The mean parameter is 0.72. 
+
+For Jul 1940, the maximum log likelihood is -3.63, the estimated value of shape parameter is 1.196 with sd equal to 0.19 and the rate parameter is 3.04 with sd equal to 0.59. The mean parameter is 0.393. 
+
+### (d)
+
+```{r}
+par(mfrow = c(1, 2))
+library(EnvStats)
+qqPlot(Jan_1940, dist = "gamma", 
+      estimate.params = TRUE, digits = 2, points.col = "blue", 
+      add.line = TRUE)
+qqPlot(Jul_1940, dist = "gamma", 
+      estimate.params = TRUE, digits = 2, points.col = "blue", 
+      add.line = TRUE)
+detach("package:EnvStats", unload = TRUE)
+```
+_Answer_: 
+
+The observations from Jan 1940 and Jul 1940 fit really will with estimated gamma distribution. Thus the adequency of gamma model is good. 
+
+## Exercise 4.39
+
+### step 1
+
+```{r}
+dat = c(0.4, 1.0, 1.9, 3.0, 5.5, 8.1, 12.1, 25.6,
+ 115.0,      119.5,   154.5,  157.0,   175.0,
+ 419.0,      423.0,   440.0,  655.0,   680.0,
+  50.0,       56.0,    70.0,  115.0,
+ 179.0,      180.0,   406.0,
+1320.0,     4603.0,  5712.0)
+plot(density(dat))
+shapiro.test(dat)
+```
+
+Do Shaprio test to raw data, the p-value is 3.763e-09, which is far below the significance level. The result rejects the null hypothesis of normality, thus it is necessary to conduct Box Cox transformation. 
+
+### step 2
+
+```{r}
+full_model = lm(dat~1)
+library(MASS)
+bc = boxcox(full_model, lambda = seq(-3, 3))
+lambda = bc$x[which(bc$y == max(bc$y))]
+# the best transformation lambda = 0.09090909
+new_dat = ((dat^lambda-1)/lambda)
+qqPlot(new_dat, dist = "norm")
+```
+
+_Answer_:
+
+The best transformation lambda = 0.09090909, and after transformation, all observation points are in the normal distribution confidence interval. 
+
+### step 3
+
+```{r}
+# Conduct Shaprio test again
+shapiro.test(new_dat)
+```
+
+The p-value of Shaprio test = 0.6462, which is far higher than the significance level, thus the test passes. 
+
+
+
+
