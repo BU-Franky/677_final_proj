@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 library(magrittr)
 library(tidyverse)
 library(ggplot2)
@@ -15,6 +15,8 @@ library(dplyr)
 library(fitdistrplus)
 library(car)
 ```
+
+# Part 1
 
 ## Exercise 4.25
 
@@ -185,6 +187,71 @@ shapiro.test(new_dat)
 
 The p-value of Shaprio test = 0.6462, which is far higher than the significance level, thus the test passes. 
 
+# Part 2
 
+### Data preparation 
 
+```{r}
+data = readxl::read_xlsx("Illinois_rain_1960-1964.xlsx", col_names = TRUE)
+percip_1960 = data$`1960`
+percip_1961 = data$`1961`
+percip_1962 = data$`1962`
+percip_1963 = data$`1963`
+percip_1964 = data$`1964`
+percip_1960 = percip_1960[!is.na(percip_1960)]
+percip_1961 = percip_1961[!is.na(percip_1961)]
+percip_1962 = percip_1962[!is.na(percip_1962)]
+percip_1963 = percip_1963[!is.na(percip_1963)]
+percip_1964 = percip_1964[!is.na(percip_1964)]
+percip = list()
+percip[[1]] = percip_1960; percip[[2]] = percip_1961; percip[[3]] = percip_1962; percip[[4]] = percip_1963
+percip[[5]] = percip_1964
+names(percip) = c("1960", "1961", "1962", "1963", "1964")
+```
+
+### Distribution check
+
+```{r}
+par(mfrow = c(3, 2))
+for(i in 1:5){
+  plot(density(percip[[i]]), xlab = "perciption", ylab = "probability", 
+       main = names(percip)[i])
+}
+```
+
+For all 5 years, the density plots are not symmetric and show a heavy tail pattern. Thus we decide to apply gamma distribution. 
+
+### Fit gamma distribution
+
+```{r}
+percip_param <- matrix(NA, ncol = 4, nrow = 5)
+colnames(percip_param) <- c("shape", "rate", "shape_sd", "rate_sd")
+for (i in 1:5) {
+  fit <- fitdist(percip[[i]], distr = "gamma", method = "mle")
+  percip_param[i, 1] <- as.numeric(fit$estimate)[1]
+  percip_param[i, 2] <- as.numeric(fit$estimate)[2]
+  percip_param[i, 3] <- as.numeric(fit$sd)[1]
+  percip_param[i, 4] <- as.numeric(fit$sd)[2]
+}
+rownames(percip_param) <- names(percip)
+percip_param <- data.frame(percip_param)
+
+percip_param <- percip_param %>% mutate(mean = shape/rate, 
+                                        per_shape_sd = shape_sd/shape, 
+                                        per_rate_sd  = rate_sd/rate)
+percip_param
+```
+
+The previous summary table is estimated parameters and means for 5 years. Estimated mean values for year 1962 and 1964 are obviously lower than other year (around 0.185). 
+The standard errors for shape parameters are around 0.05~0.09 and for rate parameters are around 0.5~0.6. For year 1964 and 1963, the estimations are relatively not condident. 
+
+### Wet years and dry years
+
+The highest mean value appears in 1961 around 0.27, which can be considered as a wet year. The lowest mean value appears in 1962 approximately 0.18 thus this year is relatively dry. According to the 'Water Resource Research' by Huff in 1964 (Table 5, 6), the rainfall perception seems no relationship with storm moving. 
+
+### generalizability
+
+Since we only have five years data, the conclusion is not solid enough. On the one hand, the distribution estimations are with great variability. On th other hand, the strom analysis contains 10 years data only. 
+
+About further direction, I will look into more perception and storm papers to come out more generalizable conclusion. 
 
